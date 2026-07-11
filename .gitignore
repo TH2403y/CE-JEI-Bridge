@@ -1,0 +1,21 @@
+# Gradle
+.gradle/
+build/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+out/
+
+# Third-party commercial plugin jar (CraftEngine) - must not be redistributed, supply your own copy
+libs/
+
+# Claude Code local config
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db

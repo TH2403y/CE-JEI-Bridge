@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${mod_version}",
+  "name": "CraftEngine Client Bridge",
+  "description": "Shows CraftEngine's custom items/blocks as their true identity in JEI and Jade.",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "com.ceclientmod.CraftEngineClientModInit"
+    ],
+    "jade": [
+      "com.ceclientmod.jade.CeJadePlugin"
+    ],
+    "jei_mod_plugin": [
+      "com.ceclientmod.jei.CeJeiPlugin"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "fabric-api": "*",
+    "minecraft": "~26.1",
+    "java": ">=25"
+  },
+  "suggests": {
+    "jei": "*",
+    "jade": "*"
+  }
+}
