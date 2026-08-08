@@ -1,0 +1,25 @@
+# Compatibility Matrix
+
+This is the intentionally small release matrix. A target is a build profile,
+not a promise that every patch in its manifest range has been tested in-game.
+
+| Component | Target | Baseline | Java | Important dependencies | Artifact |
+| --- | --- | --- | --- | --- | --- |
+| Paper bridge | 26.x | 26.2 | 25 | Paperweight dev bundle 26.2.build.65-beta; local CraftEngine API jar | server/build/libs/CraftEngineClientBridge-1.1.0-26.x.jar |
+| Fabric client | 26.x | 26.2 | 25 | Loader 0.19.3; Fabric API 0.155.0+26.2; JEI 30.16.0.131; Jade 26.2.10 | client/build/libs/ceclientmod-26.x-1.0.0.jar |
+| Fabric client | 1.21.x | 1.21.6 | 21 | Loader 0.17.2; Fabric API 0.127.1+1.21.6; JEI 19.39.0.368; Jade 19.0.3 | client-legacy/build/libs/ceclientmod-1.21.x-1.0.0.jar |
+
+## Metadata contracts
+
+- 26.x client: Minecraft >=26.2 <27, Java >=25, Loader >=0.19.3.
+- 1.21.x client: Minecraft >=1.21.6 <1.22, Java >=21, Loader >=0.17.2.
+- The client jars do not bundle net/minecraft, net/fabricmc, or mezz/jei
+  runtime classes.
+- The server jar is built only for the 26.2 Paperweight target. There is no
+  server 1.21.x build profile.
+
+## Evidence boundary
+
+Build success proves compilation, remapping, packaging, and metadata checks.
+It does not prove a live server reload or an in-game JEI/Jade session. Those
+require a separately authorized server operation and manual runtime testing.

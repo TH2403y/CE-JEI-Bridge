@@ -1,13 +1,20 @@
 package com.ceclientbridge;
 
 import com.ceclientbridge.net.BridgeChannels;
+import com.ceclientbridge.protocol.BridgeCapabilities;
+import com.ceclientbridge.protocol.BridgeCompatibilityGate;
+import com.ceclientbridge.protocol.BridgeHandshake;
+import com.ceclientbridge.protocol.BridgeHello;
+import com.ceclientbridge.protocol.BridgeHelloCodec;
 import com.ceclientbridge.recipe.RecipeSyncListener;
 import com.ceclientbridge.sync.SyncManager;
+import com.ceclientbridge.version.BridgeServerTarget;
 import net.momirealms.craftengine.bukkit.api.event.CraftEngineReloadEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -19,6 +26,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public final class CraftEngineClientBridge extends JavaPlugin implements Listener, PluginMessageListener {
 
     private SyncManager syncManager;
+    private final BridgeCompatibilityGate compatibilityGate = new BridgeCompatibilityGate();
 
     @Override
     public void onEnable() {
@@ -53,6 +61,26 @@ public final class CraftEngineClientBridge extends JavaPlugin implements Listene
     @Override
     public void onPluginMessageReceived(String channel, Player player, byte[] message) {
         if (!BridgeChannels.HELLO.equals(channel)) return;
+        try {
+            BridgeHello clientHello = BridgeHelloCodec.decode(message);
+            BridgeHello serverHello = new BridgeHello(
+                    com.ceclientbridge.protocol.BridgeProtocol.CURRENT_VERSION,
+                    BridgeServerTarget.minecraftTarget(),
+                    BridgeCapabilities.ALL
+            );
+            var negotiation = BridgeHandshake.negotiate(serverHello, clientHello);
+            if (!negotiation.accepted()) {
+                compatibilityGate.clear(player.getUniqueId());
+                getLogger().warning("Rejected CraftEngine client bridge from " + player.getName() + ": " + negotiation.reason());
+                return;
+            }
+        } catch (IllegalArgumentException invalidHello) {
+            getLogger().warning("Rejected malformed CraftEngine client bridge hello from " + player.getName()
+                    + ": " + invalidHello.getMessage());
+            compatibilityGate.clear(player.getUniqueId());
+            return;
+        }
+        compatibilityGate.markCompatible(player.getUniqueId());
         pushAllTo(player);
     }
 
@@ -61,8 +89,10 @@ public final class CraftEngineClientBridge extends JavaPlugin implements Listene
         // sendPluginMessage silently no-ops until the client's channel-registration packet reaches the
         // server (getListeningPluginChannels() is still empty at PlayerJoinEvent) - delay a moment so it
         // has time to arrive. The client-side HELLO handshake (onPluginMessageReceived above) is the
-        // primary trigger; this is a best-effort fallback for players whose hello never arrives.
+        // primary trigger. The gate below prevents this fallback from sending before compatibility is
+        // established.
         Player player = event.getPlayer();
+        compatibilityGate.clear(player.getUniqueId());
         getServer().getScheduler().runTaskLater(this, () -> {
             if (player.isOnline()) {
                 pushAllTo(player);
@@ -78,11 +108,20 @@ public final class CraftEngineClientBridge extends JavaPlugin implements Listene
         }
     }
 
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        compatibilityGate.clear(event.getPlayer().getUniqueId());
+    }
+
     public void pushAllTo(Player player) {
-        BridgeChannels.send(this, player, BridgeChannels.ITEMS, syncManager.itemsPayload());
-        BridgeChannels.send(this, player, BridgeChannels.BLOCKS, syncManager.blocksPayload());
-        BridgeChannels.send(this, player, BridgeChannels.BREWING, syncManager.brewingPayload());
-        BridgeChannels.send(this, player, BridgeChannels.CRAFTING_DISPLAY, syncManager.craftingDisplayPayload());
-        BridgeChannels.send(this, player, BridgeChannels.SMITHING_DISPLAY, syncManager.smithingDisplayPayload());
+        if (!compatibilityGate.isCompatible(player.getUniqueId())) {
+            return;
+        }
+        long generation = syncManager.generation();
+        BridgeChannels.send(this, player, BridgeChannels.ITEMS, generation, syncManager.itemsPayload());
+        BridgeChannels.send(this, player, BridgeChannels.BLOCKS, generation, syncManager.blocksPayload());
+        BridgeChannels.send(this, player, BridgeChannels.BREWING, generation, syncManager.brewingPayload());
+        BridgeChannels.send(this, player, BridgeChannels.CRAFTING_DISPLAY, generation, syncManager.craftingDisplayPayload());
+        BridgeChannels.send(this, player, BridgeChannels.SMITHING_DISPLAY, generation, syncManager.smithingDisplayPayload());
     }
 }

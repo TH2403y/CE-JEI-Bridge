@@ -1,0 +1,48 @@
+CE-JEI-Bridge build evidence
+Date: 2026-08-09
+
+Build commands
+- server: clean shadowJar -Ptarget=26.x --offline --no-daemon --rerun-tasks
+- client: clean build -Ptarget=26.x --offline --no-daemon --rerun-tasks
+- client-legacy: clean build --offline --no-daemon --rerun-tasks
+- protocol: protocolTest handshakeTest --offline --no-daemon --rerun-tasks
+
+Test results
+- BridgeProtocolTest: 4 tests passed
+- BridgeHandshakeTest: 6 tests passed
+- server shadowJar: BUILD SUCCESSFUL
+- client 26.x build: BUILD SUCCESSFUL
+- client 1.21.x build: BUILD SUCCESSFUL
+
+Artifacts
+- server/build/libs/CraftEngineClientBridge-1.1.0-26.x.jar
+  size: 46928
+  sha256: FC0D864CD1D8B1702DF9E3C52547A380B99B865B728A8CAA1ECFCC8DB290A57A
+  class major: 69 (Java 25)
+  metadata: minecraft_target=26.x
+
+- client/build/libs/ceclientmod-26.x-1.0.0.jar
+  size: 49361
+  sha256: 0A29F7EC6B38D1DA3E66C96C9CA423A560A25E784CA6EDC93A73FC17CD1E749E
+  class major: 69 (Java 25)
+  minecraft dependency: >=26.2 <27
+  loader dependency: >=0.19.3
+  java dependency: >=25
+
+- client-legacy/build/libs/ceclientmod-1.21.x-1.0.0.jar
+  size: 49770
+  sha256: CA21BCEB270252FECC71F38B817127BDD07BF91ACF577E7D20112136CCEAF0FE
+  class major: 65 (Java 21)
+  minecraft dependency: >=1.21.6 <1.22
+  loader dependency: >=0.17.2
+  java dependency: >=21
+
+Client jar package audit
+- net/minecraft classes: 0
+- net/fabricmc classes: 0
+- mezz/jei classes: 0
+- snownee/jade classes: 0
+
+Deployment evidence
+- No remote files changed.
+- No MC server was stopped, restarted, or reloaded.

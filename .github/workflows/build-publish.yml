@@ -1,0 +1,162 @@
+name: Build and publish
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: ce-jei-bridge-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build CE-JEI Bridge artifacts
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.parallel=true
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Java 21
+        id: java21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Java 25
+        id: java25
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Use Java 21 for Gradle and Java 25 for toolchains
+        shell: bash
+        run: |
+          echo "JAVA_HOME=${{ steps.java21.outputs.path }}" >> "$GITHUB_ENV"
+          echo "GRADLE_OPTS=${GRADLE_OPTS} -Dorg.gradle.java.installations.paths=${{ steps.java25.outputs.path }}" >> "$GITHUB_ENV"
+
+      - name: Download 26.x client compile dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          download_sha512() {
+            local url="$1"
+            local output="$2"
+            local expected="$3"
+            curl --fail --location --silent --show-error --retry 3 "$url" --output "$output"
+            printf '%s  %s\n' "$expected" "$output" | sha512sum --check --status -
+          }
+
+          mkdir -p client/libs
+          download_sha512 \
+            "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar" \
+            "client/libs/fabric-loader-0.19.3.jar" \
+            "39EDB4DBA380AC942C02E6CF385B98E9C5F0E84E7FD00F9262BBA2197187FDA8825AE025F8865D3F047BCDF166C0367266FB1BBFCB80D243266191F677BD8EF3"
+          download_sha512 \
+            "https://cdn.modrinth.com/data/u6dRKJwZ/versions/zE4WIFwL/jei-26.2-fabric-30.16.0.131.jar" \
+            "client/libs/jei-26.2-fabric-30.16.0.131.jar" \
+            "B7639338159A82DF92AF833C29B826502EFC019896861B57054691BD8637D17482B023144E5BA83BFB711D01F0FC49FDC89196FBFFDC6CD5AFB950C2A0C4C01E"
+          download_sha512 \
+            "https://cdn.modrinth.com/data/nvQzSEkH/versions/JB4B8a9g/Jade-mc26.2-Fabric-26.2.10.jar" \
+            "client/libs/Jade-mc26.2-Fabric-26.2.10.jar" \
+            "5964E943CD56A4BA9FDF6BE4ED351E3B57811CE3026714348590270087F6D198C64D06B5EFEA7968752CBB2A3A7FBA8974E014CA7573608930C87365422215EC"
+
+      - name: Download CraftEngine compile dependency
+        shell: bash
+        env:
+          CRAFTENGINE_JAR_URL: ${{ secrets.CRAFTENGINE_JAR_URL }}
+          CRAFTENGINE_JAR_SHA256: ${{ secrets.CRAFTENGINE_JAR_SHA256 }}
+          CRAFTENGINE_JAR_TOKEN: ${{ secrets.CRAFTENGINE_JAR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$CRAFTENGINE_JAR_URL" || -z "$CRAFTENGINE_JAR_SHA256" ]]; then
+            echo "CRAFTENGINE_JAR_URL and CRAFTENGINE_JAR_SHA256 repository secrets are required for the Paper build." >&2
+            exit 1
+          fi
+
+          mkdir -p server/libs
+          auth_args=()
+          if [[ -n "$CRAFTENGINE_JAR_TOKEN" ]]; then
+            auth_args+=(--header "Authorization: Bearer $CRAFTENGINE_JAR_TOKEN")
+          fi
+          curl --fail --location --silent --show-error --retry 3 \
+            "${auth_args[@]}" \
+            "$CRAFTENGINE_JAR_URL" \
+            --output server/libs/craft-engine-paper-plugin-26.7-SNAPSHOT.jar
+          printf '%s  %s\n' "$CRAFTENGINE_JAR_SHA256" "server/libs/craft-engine-paper-plugin-26.7-SNAPSHOT.jar" \
+            | sha256sum --check --status -
+
+      - name: Run protocol tests
+        working-directory: client
+        shell: bash
+        run: bash ./gradlew --no-daemon -p ../protocol protocolTest handshakeTest
+
+      - name: Build Fabric 26.x client
+        working-directory: client
+        shell: bash
+        run: bash ./gradlew --no-daemon clean build -Ptarget=26.x
+
+      - name: Build Fabric 1.21.x client
+        working-directory: client
+        shell: bash
+        run: bash ./gradlew --no-daemon -p ../client-legacy clean build
+
+      - name: Build Paper 26.x plugin with shadowJar
+        working-directory: server
+        shell: bash
+        run: bash ./gradlew --no-daemon clean shadowJar -Ptarget=26.x
+
+      - name: Stage release files and checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp server/build/libs/CraftEngineClientBridge-1.1.0-26.x.jar dist/
+          cp client/build/libs/ceclientmod-26.x-1.0.0.jar dist/
+          cp client-legacy/build/libs/ceclientmod-1.21.x-1.0.0.jar dist/
+          sha256sum dist/*.jar > dist/SHA256SUMS.txt
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ce-jei-bridge-${{ github.sha }}
+          path: dist
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish tagged release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ce-jei-bridge-${{ github.sha }}
+          path: dist
+
+      - name: Publish GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" dist/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes dist/*
+          fi

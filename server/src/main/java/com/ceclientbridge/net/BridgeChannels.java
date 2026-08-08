@@ -1,20 +1,17 @@
 package com.ceclientbridge.net;
 
+import com.ceclientbridge.protocol.BridgeFrame;
+import com.ceclientbridge.protocol.BridgeProtocol;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Wire format shared with the client mod: a full payload (produced by {@link com.ceclientbridge.sync.SyncManager})
- * is split into chunks of at most {@link #MAX_CHUNK_BYTES}. Each chunk on the wire is:
- * [totalChunks:varint][chunkIndex:varint][chunkBytes:varint-length-prefixed], matching the client's
- * {@code ChunkPayload} StreamCodec (VAR_INT, VAR_INT, BYTE_ARRAY) exactly. The client must concatenate
- * chunkBytes across all chunkIndex 0..totalChunks-1 (in order) into one buffer before parsing entries -
- * chunk boundaries carry no entry-alignment meaning.
+ * Sends generation-tagged protocol frames over the existing plugin-message channels. The Fabric side
+ * receives the raw frame bytes through its channel-specific payload codec and validates the generation
+ * before exposing it to a registry.
  */
 public final class BridgeChannels {
 
@@ -31,6 +28,13 @@ public final class BridgeChannels {
     }
 
     public static void send(Plugin plugin, Player player, String channel, byte[] fullPayload) {
+        send(plugin, player, channel, 0L, fullPayload);
+    }
+
+    public static void send(Plugin plugin, Player player, String channel, long generation, byte[] fullPayload) {
+        if (fullPayload.length > BridgeProtocol.MAX_GENERATION_BYTES) {
+            throw new IllegalArgumentException("bridge payload exceeds maximum generation size: " + fullPayload.length);
+        }
         List<byte[]> raw = new ArrayList<>();
         for (int offset = 0; offset < fullPayload.length; offset += MAX_CHUNK_BYTES) {
             int end = Math.min(offset + MAX_CHUNK_BYTES, fullPayload.length);
@@ -40,31 +44,26 @@ public final class BridgeChannels {
             raw.add(new byte[0]);
         }
         int total = raw.size();
+        String type = frameType(channel);
         for (int i = 0; i < total; i++) {
-            player.sendPluginMessage(plugin, channel, framedChunk(total, i, raw.get(i)));
+            BridgeFrame frame = new BridgeFrame(
+                    BridgeProtocol.CURRENT_VERSION,
+                    type,
+                    generation,
+                    i,
+                    total,
+                    fullPayload.length,
+                    raw.get(i)
+            );
+            player.sendPluginMessage(plugin, channel, BridgeProtocol.encodeFrame(frame));
         }
     }
 
-    private static byte[] framedChunk(int total, int index, byte[] body) {
-        try {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream(body.length + 16);
-            java.io.DataOutputStream out = new java.io.DataOutputStream(bos);
-            writeVarInt(out, total);
-            writeVarInt(out, index);
-            writeVarInt(out, body.length);
-            out.write(body);
-            return bos.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    private static String frameType(String channel) {
+        int separator = channel.indexOf(':');
+        if (separator < 0 || separator == channel.length() - 1) {
+            throw new IllegalArgumentException("invalid bridge channel: " + channel);
         }
-    }
-
-    /** Same unsigned LEB128 encoding as Minecraft's {@code FriendlyByteBuf.writeVarInt} / {@code ByteBufCodecs.VAR_INT}. */
-    private static void writeVarInt(java.io.DataOutputStream out, int value) throws IOException {
-        while ((value & ~0x7F) != 0) {
-            out.writeByte((value & 0x7F) | 0x80);
-            value >>>= 7;
-        }
-        out.writeByte(value);
+        return channel.substring(separator + 1);
     }
 }

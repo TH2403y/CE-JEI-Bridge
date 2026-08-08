@@ -57,6 +57,7 @@ public final class SyncManager {
     private volatile Set<String> craftingDisplayRecipeIds = Set.of();
     private volatile byte[] smithingDisplayPayload = emptyCountPayload();
     private volatile Set<String> smithingDisplayRecipeIds = Set.of();
+    private volatile long generation;
 
     public SyncManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -82,6 +83,10 @@ public final class SyncManager {
         return smithingDisplayPayload;
     }
 
+    public long generation() {
+        return generation;
+    }
+
     /** Every recipe id (CraftEngine's own crafting-table recipes AND any other plugin's, e.g.
      *  Craftorithm, that involves a CraftEngine item anywhere) that got a precise per-slot JEI display
      *  entry - see buildCraftingDisplayPayload. RecipeSyncListener uses this as the single source of
@@ -98,13 +103,15 @@ public final class SyncManager {
     }
 
     public void rebuild() {
+        long nextGeneration = generation + 1;
         Set<Key> craftingReferencedItems = collectCraftingReferencedItemIds();
         itemsPayload = buildItemsPayload(craftingReferencedItems);
         blocksPayload = buildBlocksPayload();
         brewingPayload = buildBrewingPayload();
         craftingDisplayPayload = buildCraftingDisplayPayload();
         smithingDisplayPayload = buildSmithingDisplayPayload();
-        plugin.getLogger().info("CraftEngine sync rebuilt: " + itemsPayload.length + "B items ("
+        generation = nextGeneration;
+        plugin.getLogger().info("CraftEngine sync rebuilt (generation " + generation + "): " + itemsPayload.length + "B items ("
                 + craftingReferencedItems.size() + " referenced by a crafting recipe), "
                 + blocksPayload.length + "B blocks, " + brewingPayload.length + "B brewing, "
                 + craftingDisplayPayload.length + "B crafting display, "

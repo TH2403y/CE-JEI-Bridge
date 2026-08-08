@@ -70,11 +70,11 @@ public final class CraftEngineClientModInit implements ClientModInitializer {
         PayloadTypeRegistry.clientboundPlay().register(BridgeChannels.SMITHING_DISPLAY, ChunkPayload.codecFor(BridgeChannels.SMITHING_DISPLAY));
         PayloadTypeRegistry.serverboundPlay().register(HelloPayload.TYPE, HelloPayload.CODEC);
 
-        ChunkAssembler itemsAssembler = new ChunkAssembler();
-        ChunkAssembler blocksAssembler = new ChunkAssembler();
-        ChunkAssembler brewingAssembler = new ChunkAssembler();
-        ChunkAssembler craftingDisplayAssembler = new ChunkAssembler();
-        ChunkAssembler smithingDisplayAssembler = new ChunkAssembler();
+        ChunkAssembler itemsAssembler = new ChunkAssembler("items");
+        ChunkAssembler blocksAssembler = new ChunkAssembler("blocks");
+        ChunkAssembler brewingAssembler = new ChunkAssembler("brewing");
+        ChunkAssembler craftingDisplayAssembler = new ChunkAssembler("crafting_display");
+        ChunkAssembler smithingDisplayAssembler = new ChunkAssembler("smithing_display");
 
         ClientPlayNetworking.registerGlobalReceiver(BridgeChannels.ITEMS, (payload, context) ->
                 itemsAssembler.accept(payload).ifPresent(full -> {
@@ -134,6 +134,11 @@ public final class CraftEngineClientModInit implements ClientModInitializer {
         // did nothing most of the time. Retry every client tick until it succeeds (typically within a
         // handful of ticks) instead of gambling on a single attempt.
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            itemsAssembler.clear();
+            blocksAssembler.clear();
+            brewingAssembler.clear();
+            craftingDisplayAssembler.clear();
+            smithingDisplayAssembler.clear();
             helloPending = true;
             helloAttempts = 0;
         });
