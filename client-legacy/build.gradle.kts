@@ -65,6 +65,9 @@ tasks {
         options.encoding = "UTF-8"
         options.release.set(21)
     }
+    test {
+        failOnNoDiscoveredTests.set(false)
+    }
     processResources {
         filteringCharset = "UTF-8"
         val props = mapOf(
@@ -90,5 +93,10 @@ tasks {
     }
     named<org.gradle.jvm.tasks.Jar>("remapJar") {
         archiveFileName.set("$modId-1.21.x-$modVersion.jar")
+    }
+    register<JavaExec>("channelTest") {
+        dependsOn(testClasses)
+        classpath = sourceSets.test.get().runtimeClasspath
+        mainClass.set("com.ceclientmod.net.LegacyChannelIdentifierTest")
     }
 }

@@ -12,7 +12,8 @@ import net.minecraft.util.Identifier;
 /** C2S: sent once right after we register our channels, so the server can validate the pair. */
 public record HelloPayload(int protocolVersion, String minecraftTarget, int capabilities) implements CustomPayload {
 
-    public static final CustomPayload.Id<HelloPayload> TYPE = CustomPayload.id("ceclientbridge:hello");
+    public static final CustomPayload.Id<HelloPayload> TYPE =
+            new CustomPayload.Id<>(Identifier.of("ceclientbridge", "hello"));
     public static final PacketCodec<RegistryByteBuf, HelloPayload> CODEC = PacketCodec.ofStatic(
             (buf, payload) -> {
                 buf.writeVarInt(BridgeHelloCodec.MAGIC);
