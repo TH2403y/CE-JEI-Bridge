@@ -4,7 +4,7 @@ final class BridgeHandshakeTest {
 
     public static void main(String[] args) {
         acceptsMatchingTargetAndCapabilities();
-        acceptsSupportedCrossTargetClient();
+        accepts12111LegacyClient();
         rejectsProtocolMismatch();
         rejectsUnsupportedTargetMismatch();
         rejectsMissingRequiredCapability();
@@ -31,13 +31,13 @@ final class BridgeHandshakeTest {
         check(!result.accepted() && result.reason().contains("protocol"), "protocol mismatch should be explained");
     }
 
-    private static void acceptsSupportedCrossTargetClient() {
+    private static void accepts12111LegacyClient() {
         BridgeHello server = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "26.x", BridgeCapabilities.ALL);
-        BridgeHello client = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "1.21.x", BridgeCapabilities.ALL);
+        BridgeHello client = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "1.21.11", BridgeCapabilities.ALL);
 
         BridgeNegotiation result = BridgeHandshake.negotiate(server, client);
 
-        check(result.accepted(), "supported cross-target client should be accepted");
+        check(result.accepted(), "1.21.11 client should be accepted by a 26.x server");
     }
 
     private static void rejectsUnsupportedTargetMismatch() {

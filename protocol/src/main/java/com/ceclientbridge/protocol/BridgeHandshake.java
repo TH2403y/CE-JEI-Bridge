@@ -26,15 +26,15 @@ public final class BridgeHandshake {
         if (serverTarget.equals(clientTarget)) {
             return true;
         }
-        return (is26Family(serverTarget) && is121Family(clientTarget))
-                || (is121Family(serverTarget) && is26Family(clientTarget));
+        return (is26Family(serverTarget) && is12111Target(clientTarget))
+                || (is12111Target(serverTarget) && is26Family(clientTarget));
     }
 
     private static boolean is26Family(String target) {
         return "26.x".equals(target);
     }
 
-    private static boolean is121Family(String target) {
-        return "1.21.x".equals(target);
+    private static boolean is12111Target(String target) {
+        return "1.21.11".equals(target);
     }
 }
