@@ -15,7 +15,7 @@ public final class CeBrewingRegistry {
         for (int i = 0; i < count; i++) {
             String recipeId = in.readUTF();
             String ingredientKey = in.readUTF();
-            var stack = CeItemRegistry.readAppearance(in, recipeId);
+            var stack = CeItemRegistry.readAppearance(in);
             fresh.add(new CeBrewingEntry(recipeId, ingredientKey, stack));
         }
         entries.clear();

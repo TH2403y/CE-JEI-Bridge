@@ -23,10 +23,10 @@ public final class CeSmithingRegistry {
         int count = in.readInt();
         for (int i = 0; i < count; i++) {
             String recipeId = in.readUTF();
-            ItemStack template = in.readBoolean() ? CeItemRegistry.readAppearance(in, recipeId) : ItemStack.EMPTY;
-            ItemStack base = in.readBoolean() ? CeItemRegistry.readAppearance(in, recipeId) : ItemStack.EMPTY;
-            ItemStack addition = in.readBoolean() ? CeItemRegistry.readAppearance(in, recipeId) : ItemStack.EMPTY;
-            ItemStack result = CeItemRegistry.readAppearance(in, recipeId);
+            ItemStack template = in.readBoolean() ? CeItemRegistry.readAppearance(in) : ItemStack.EMPTY;
+            ItemStack base = in.readBoolean() ? CeItemRegistry.readAppearance(in) : ItemStack.EMPTY;
+            ItemStack addition = in.readBoolean() ? CeItemRegistry.readAppearance(in) : ItemStack.EMPTY;
+            ItemStack result = CeItemRegistry.readAppearance(in);
             fresh.add(new CeSmithingEntry(recipeId, template, base, addition, result));
         }
         entries.clear();

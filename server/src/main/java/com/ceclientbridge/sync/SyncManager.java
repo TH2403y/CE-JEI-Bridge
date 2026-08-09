@@ -104,15 +104,15 @@ public final class SyncManager {
 
     public void rebuild() {
         long nextGeneration = generation + 1;
-        Set<Key> craftingReferencedItems = collectCraftingReferencedItemIds();
-        itemsPayload = buildItemsPayload(craftingReferencedItems);
+        Set<Key> craftingOutputItems = collectCraftingOutputItemIds();
+        itemsPayload = buildItemsPayload(craftingOutputItems);
         blocksPayload = buildBlocksPayload();
         brewingPayload = buildBrewingPayload();
         craftingDisplayPayload = buildCraftingDisplayPayload();
         smithingDisplayPayload = buildSmithingDisplayPayload();
         generation = nextGeneration;
         plugin.getLogger().info("CraftEngine sync rebuilt (generation " + generation + "): " + itemsPayload.length + "B items ("
-                + craftingReferencedItems.size() + " referenced by a crafting recipe), "
+                + craftingOutputItems.size() + " crafting outputs), "
                 + blocksPayload.length + "B blocks, " + brewingPayload.length + "B brewing, "
                 + craftingDisplayPayload.length + "B crafting display, "
                 + smithingDisplayPayload.length + "B smithing display");
@@ -443,53 +443,38 @@ public final class SyncManager {
         return null;
     }
 
-    /** Every CraftEngine item id that appears as an ingredient or result of a custom crafting-table
-     *  recipe. Used to trim the items payload down to what players can actually look up in a recipe
-     *  book/JEI, instead of shipping every loaded item (most servers load far more than are reachable
-     *  via crafting - the rest come from commands, mob drops, other plugins, etc). */
-    private Set<Key> collectCraftingReferencedItemIds() {
+    /** Every CraftEngine item id produced by a recipe this bridge can send to JEI. */
+    private Set<Key> collectCraftingOutputItemIds() {
         Set<Key> ids = new HashSet<>();
         try {
             for (Recipe recipe : BukkitRecipeManager.instance().recipesByType(RecipeType.CRAFTING)) {
                 try {
                     if (!(recipe instanceof CustomCraftingTableRecipe crafting)) continue;
-                    for (Ingredient ingredient : crafting.ingredientsInUse()) {
-                        if (ingredient == null) continue;
-                        for (UniqueKey key : ingredient.items()) {
-                            ids.add(key.key());
-                        }
-                    }
+                    if (!(crafting instanceof net.momirealms.craftengine.core.item.recipe.CustomShapedRecipe)
+                            && !(crafting instanceof net.momirealms.craftengine.core.item.recipe.CustomShapelessRecipe)) continue;
                     Item resultItem = crafting.buildVisualOrActualResult(ItemBuildContext.empty());
                     if (resultItem != null) {
                         resultItem.getDefinition().ifPresent(def -> ids.add(def.id()));
                     }
                 } catch (Throwable t) {
-                    plugin.getLogger().log(Level.WARNING, "Failed to inspect CraftEngine crafting recipe '" + recipe.id() + "' while collecting referenced items", t);
+                    plugin.getLogger().log(Level.WARNING, "Failed to inspect CraftEngine crafting recipe '" + recipe.id() + "' while collecting output items", t);
                 }
             }
         } catch (Throwable t) {
-            plugin.getLogger().log(Level.WARNING, "Failed to read CraftEngine crafting recipes while collecting referenced items", t);
+            plugin.getLogger().log(Level.WARNING, "Failed to read CraftEngine crafting recipes while collecting output items", t);
         }
 
-        // Also recognize CraftEngine items used in recipes registered by OTHER plugins (e.g. Craftorithm)
-        // via the plain Bukkit recipe API - those never show up in CraftEngine's own recipe list above,
-        // since that only tracks recipes CraftEngine itself parsed from its own config.
+        // Include CraftEngine results from shaped and shapeless recipes registered by other plugins.
         java.util.Iterator<org.bukkit.inventory.Recipe> bukkitRecipes = plugin.getServer().recipeIterator();
         while (bukkitRecipes.hasNext()) {
             org.bukkit.inventory.Recipe recipe = bukkitRecipes.next();
             try {
-                addIfCraftEngineItem(recipe.getResult(), ids);
-                if (recipe instanceof org.bukkit.inventory.ShapedRecipe shaped) {
-                    for (org.bukkit.inventory.RecipeChoice choice : shaped.getChoiceMap().values()) {
-                        if (choice != null) addIfCraftEngineItem(choice.getItemStack(), ids);
-                    }
-                } else if (recipe instanceof org.bukkit.inventory.ShapelessRecipe shapeless) {
-                    for (org.bukkit.inventory.RecipeChoice choice : shapeless.getChoiceList()) {
-                        addIfCraftEngineItem(choice.getItemStack(), ids);
-                    }
+                if (recipe instanceof org.bukkit.inventory.ShapedRecipe
+                        || recipe instanceof org.bukkit.inventory.ShapelessRecipe) {
+                    addIfCraftEngineItem(recipe.getResult(), ids);
                 }
             } catch (Throwable t) {
-                plugin.getLogger().log(Level.WARNING, "Failed to inspect a Bukkit-registered recipe while collecting referenced items", t);
+                plugin.getLogger().log(Level.WARNING, "Failed to inspect a Bukkit-registered recipe while collecting output items", t);
             }
         }
         return ids;
@@ -500,7 +485,7 @@ public final class SyncManager {
         BukkitItemManager.instance().wrap(stack).getDefinition().ifPresent(def -> ids.add(def.id()));
     }
 
-    private byte[] buildItemsPayload(Set<Key> referencedItemIds) {
+    private byte[] buildItemsPayload(Set<Key> craftingOutputItemIds) {
         Map<Key, ItemDefinition> loaded;
         try {
             loaded = CraftEngineItems.loadedItems();
@@ -510,7 +495,7 @@ public final class SyncManager {
         }
         List<byte[]> entries = new ArrayList<>();
         for (Key id : loaded.keySet()) {
-            if (!referencedItemIds.contains(id)) continue;
+            if (!craftingOutputItemIds.contains(id)) continue;
             try {
                 BukkitItemDefinition def = CraftEngineItems.byId(id);
                 if (def == null) continue;
@@ -600,9 +585,14 @@ public final class SyncManager {
         return BukkitItemManager.instance().s2c(stack, null).orElse(stack);
     }
 
-    /** [baseItem:UTF][hasCMD:bool][cmd:int?][hasItemModel:bool][itemModel:UTF?][hasName:bool][name:JSON?] */
+    /** [baseItem:UTF][hasCraftEngineId:bool][craftEngineId:UTF?][hasCMD:bool][cmd:int?][hasItemModel:bool][itemModel:UTF?][hasName:bool][name:JSON?] */
     private static void writeItemAppearance(DataOutputStream out, ItemStack stack) throws IOException {
         out.writeUTF(stack.getType().getKey().toString());
+        var definition = BukkitItemManager.instance().wrap(stack).getDefinition();
+        out.writeBoolean(definition.isPresent());
+        if (definition.isPresent()) {
+            out.writeUTF(definition.get().id().asString());
+        }
         ItemMeta meta = stack.getItemMeta();
         boolean hasCmd = meta != null && meta.hasCustomModelData();
         out.writeBoolean(hasCmd);

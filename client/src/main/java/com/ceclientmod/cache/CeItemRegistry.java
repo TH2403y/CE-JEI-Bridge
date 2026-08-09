@@ -44,7 +44,7 @@ public final class CeItemRegistry {
         int count = in.readInt();
         for (int i = 0; i < count; i++) {
             String ceId = in.readUTF();
-            ItemStack stack = readAppearance(in, ceId);
+            ItemStack stack = readAppearance(in);
             CeItem item = new CeItem(ceId, stack);
             newById.put(ceId, item);
             newByBase.computeIfAbsent(stack.getItem(), k -> new ArrayList<>()).add(item);
@@ -55,12 +55,13 @@ public final class CeItemRegistry {
         byBaseItem.putAll(newByBase);
     }
 
-    /** Mirrors SyncManager#writeItemAppearance on the server: [baseItem][hasCMD][cmd?][hasItemModel][itemModel?][hasName][name:JSON?]. */
-    public static ItemStack readAppearance(DataInputStream in, String ceId) throws IOException {
+    /** Mirrors SyncManager#writeItemAppearance, including a per-stack optional CraftEngine identity. */
+    public static ItemStack readAppearance(DataInputStream in) throws IOException {
         Identifier baseId = Identifier.parse(in.readUTF());
         Item baseItem = BuiltInRegistries.ITEM.getValue(baseId);
         ItemStack stack = new ItemStack(baseItem);
 
+        String ceId = in.readBoolean() ? in.readUTF() : null;
         if (in.readBoolean()) {
             int cmd = in.readInt();
             stack.set(DataComponents.CUSTOM_MODEL_DATA,
@@ -82,9 +83,11 @@ public final class CeItemRegistry {
             stack.set(DataComponents.CUSTOM_NAME, name);
         }
 
-        CompoundTag tag = new CompoundTag();
-        tag.putString(CUSTOM_DATA_ID_KEY, ceId);
-        stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        if (ceId != null) {
+            CompoundTag tag = new CompoundTag();
+            tag.putString(CUSTOM_DATA_ID_KEY, ceId);
+            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+        }
         return stack;
     }
 

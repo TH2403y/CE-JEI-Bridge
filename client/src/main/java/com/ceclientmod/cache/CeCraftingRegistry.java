@@ -30,12 +30,12 @@ public final class CeCraftingRegistry {
             List<ItemStack> inputs = new ArrayList<>(slots);
             for (int s = 0; s < slots; s++) {
                 if (in.readBoolean()) {
-                    inputs.add(CeItemRegistry.readAppearance(in, recipeId));
+                    inputs.add(CeItemRegistry.readAppearance(in));
                 } else {
                     inputs.add(ItemStack.EMPTY);
                 }
             }
-            ItemStack result = CeItemRegistry.readAppearance(in, recipeId);
+            ItemStack result = CeItemRegistry.readAppearance(in);
             fresh.add(new CeCraftingEntry(recipeId, shapeless, width, height, inputs, result));
         }
         entries.clear();

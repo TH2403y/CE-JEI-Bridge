@@ -11,7 +11,7 @@ import java.util.zip.CRC32;
 
 /** Dependency-free wire framing shared by the Paper plugin and Fabric mod. */
 public final class BridgeProtocol {
-    public static final int CURRENT_VERSION = 2;
+    public static final int CURRENT_VERSION = 3;
     public static final int MAX_PAYLOAD_BYTES = 8 * 1024 * 1024;
     public static final int MAX_GENERATION_BYTES = 64 * 1024 * 1024;
 
