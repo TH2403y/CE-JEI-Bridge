@@ -165,6 +165,9 @@ jobs:
           if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload "$release_tag" --repo "$GITHUB_REPOSITORY" dist/* --clobber
             if [[ "$release_tag" == "latest" ]]; then
+              gh api --method PATCH \
+                "repos/${GITHUB_REPOSITORY}/git/refs/tags/${release_tag}" \
+                -f "sha=${GITHUB_SHA}" -F "force=true" >/dev/null
               gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" \
                 --title "$release_title" --notes "$release_notes" --prerelease --latest=false
             fi
