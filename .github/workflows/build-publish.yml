@@ -169,7 +169,7 @@ jobs:
                 "repos/${GITHUB_REPOSITORY}/git/refs/tags/${release_tag}" \
                 -f "sha=${GITHUB_SHA}" -F "force=true" >/dev/null
               gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" \
-                --title "$release_title" --notes "$release_notes" --prerelease --latest=false
+                --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes" --prerelease --latest=false
             fi
           else
             gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" \
