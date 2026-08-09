@@ -40,6 +40,8 @@ CraftEngine 通过 `item_model` 等数据组件在**服务端到客户端的封�
 
 GitHub Actions 会使用仓库 Release 中的 CraftEngine 26.7.4 社区版依赖自动构建该插件；本地构建仍需准备对应的 `server/libs/` JAR。
 
+推送到 `main` 且构建成功后，GitHub Actions 会自动更新 [`latest` 预发布版本](https://github.com/TH2403y/CE-JEI-Bridge/releases/tag/latest)，其中包含 Paper 插件、Fabric 26.x 模组、Fabric 1.21.x 模组和 `SHA256SUMS.txt`。推送 `v*` 标签则发布对应的正式版本 Release。
+
 ### client/（CraftEngineClientMod，26.x）
 
 ```

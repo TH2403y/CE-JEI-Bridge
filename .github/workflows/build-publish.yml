@@ -136,8 +136,8 @@ jobs:
           retention-days: 14
 
   release:
-    name: Publish tagged release
-    if: startsWith(github.ref, 'refs/tags/v')
+    name: Publish plugin and mod releases
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -149,14 +149,47 @@ jobs:
           name: ce-jei-bridge-${{ github.sha }}
           path: dist
 
-      - name: Publish GitHub release
+      - name: Publish GitHub release assets
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" dist/* --clobber
+
+          required_assets=(
+            "CraftEngineClientBridge-1.1.0-26.x.jar"
+            "ceclientmod-26.x-1.0.0.jar"
+            "ceclientmod-1.21.x-1.0.0.jar"
+            "SHA256SUMS.txt"
+          )
+          for asset in "${required_assets[@]}"; do
+            test -f "dist/$asset" || {
+              echo "Missing release asset: dist/$asset" >&2
+              exit 1
+            }
+          done
+
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]]; then
+            release_tag="latest"
+            release_title="Latest main build"
+            release_notes="Automatic build from main commit $GITHUB_SHA."
+            release_create_flags=(--prerelease --latest=false)
           else
-            gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --generate-notes dist/*
+            release_tag="$GITHUB_REF_NAME"
+            release_title="$GITHUB_REF_NAME"
+            release_notes="Build artifacts for $GITHUB_REF_NAME."
+            release_create_flags=(--verify-tag --generate-notes --latest=false)
+          fi
+
+          if gh release view "$release_tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$release_tag" --repo "$GITHUB_REPOSITORY" dist/* --clobber
+            if [[ "$release_tag" == "latest" ]]; then
+              gh release edit "$release_tag" --repo "$GITHUB_REPOSITORY" \
+                --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes" \
+                --prerelease --latest=false
+            fi
+          else
+            gh release create "$release_tag" --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" --title "$release_title" --notes "$release_notes" \
+              "${release_create_flags[@]}" dist/*
           fi
