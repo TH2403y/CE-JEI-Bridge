@@ -10,8 +10,11 @@ build/
 .vscode/
 out/
 
-# Third-party commercial plugin jar (CraftEngine) - must not be redistributed, supply your own copy
+# Keep local library directories ignored except for the bundled community CraftEngine build dependency.
 libs/
+!server/libs/
+server/libs/*
+!server/libs/craft-engine-paper-plugin-26.7.4.jar
 
 # Claude Code local config
 .claude/

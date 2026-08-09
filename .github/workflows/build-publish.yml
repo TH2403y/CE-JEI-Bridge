@@ -71,30 +71,11 @@ jobs:
             "client/libs/Jade-mc26.2-Fabric-26.2.10.jar" \
             "5964E943CD56A4BA9FDF6BE4ED351E3B57811CE3026714348590270087F6D198C64D06B5EFEA7968752CBB2A3A7FBA8974E014CA7573608930C87365422215EC"
 
-      - name: Download CraftEngine compile dependency
+      - name: Verify bundled CraftEngine compile dependency
         shell: bash
-        env:
-          CRAFTENGINE_JAR_URL: ${{ secrets.CRAFTENGINE_JAR_URL }}
-          CRAFTENGINE_JAR_SHA256: ${{ secrets.CRAFTENGINE_JAR_SHA256 }}
-          CRAFTENGINE_JAR_TOKEN: ${{ secrets.CRAFTENGINE_JAR_TOKEN }}
         run: |
           set -euo pipefail
-
-          if [[ -z "$CRAFTENGINE_JAR_URL" || -z "$CRAFTENGINE_JAR_SHA256" ]]; then
-            echo "CRAFTENGINE_JAR_URL and CRAFTENGINE_JAR_SHA256 repository secrets are required for the Paper build." >&2
-            exit 1
-          fi
-
-          mkdir -p server/libs
-          auth_args=()
-          if [[ -n "$CRAFTENGINE_JAR_TOKEN" ]]; then
-            auth_args+=(--header "Authorization: Bearer $CRAFTENGINE_JAR_TOKEN")
-          fi
-          curl --fail --location --silent --show-error --retry 3 \
-            "${auth_args[@]}" \
-            "$CRAFTENGINE_JAR_URL" \
-            --output server/libs/craft-engine-paper-plugin-26.7-SNAPSHOT.jar
-          printf '%s  %s\n' "$CRAFTENGINE_JAR_SHA256" "server/libs/craft-engine-paper-plugin-26.7-SNAPSHOT.jar" \
+          printf '%s  %s\n' "8771A23713BEABCFEFA46DD0B4C768D7EB1112DBDE803243C972C08EC157D406" "server/libs/craft-engine-paper-plugin-26.7.4.jar" \
             | sha256sum --check --status -
 
       - name: Run protocol tests

@@ -18,7 +18,7 @@ val target = providers.gradleProperty("target")
     .orElse("26.x")
     .get()
 val craftEngineJar = providers.gradleProperty("craftEngineJar")
-    .orElse("libs/craft-engine-paper-plugin-26.7-SNAPSHOT.jar")
+    .orElse("libs/craft-engine-paper-plugin-26.7.4.jar")
     .get()
 val profiles = mapOf(
     // The Paper bridge is released as one 26.2 server artifact. Legacy coverage is
