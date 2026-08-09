@@ -74,8 +74,8 @@ jobs:
       - name: Download CraftEngine compile dependency
         shell: bash
         env:
-          CRAFTENGINE_JAR_URL: ${{ secrets.CRAFTENGINE_JAR_URL || 'https://github.com/TH2403y/CE-JEI-Bridge/releases/download/ce-dependencies-26.7.4/craft-engine-paper-plugin-26.7.4.jar' }}
-          CRAFTENGINE_JAR_SHA256: ${{ secrets.CRAFTENGINE_JAR_SHA256 || '8771A23713BEABCFEFA46DD0B4C768D7EB1112DBDE803243C972C08EC157D406' }}
+          CRAFTENGINE_JAR_URL: ${{ secrets.CRAFTENGINE_JAR_URL }}
+          CRAFTENGINE_JAR_SHA256: ${{ secrets.CRAFTENGINE_JAR_SHA256 }}
           CRAFTENGINE_JAR_TOKEN: ${{ secrets.CRAFTENGINE_JAR_TOKEN }}
         run: |
           set -euo pipefail
