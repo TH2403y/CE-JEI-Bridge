@@ -5,13 +5,14 @@ import com.ceclientbridge.protocol.BridgeProtocol;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Sends generation-tagged protocol frames over the existing plugin-message channels. The Fabric side
- * receives the raw frame bytes through its channel-specific payload codec and validates the generation
- * before exposing it to a registry.
+ * reads the Minecraft {@code BYTE_ARRAY} envelope before receiving the raw frame for generation
+ * validation and registry updates.
  */
 public final class BridgeChannels {
 
@@ -55,8 +56,20 @@ public final class BridgeChannels {
                     fullPayload.length,
                     raw.get(i)
             );
-            player.sendPluginMessage(plugin, channel, BridgeProtocol.encodeFrame(frame));
+            player.sendPluginMessage(plugin, channel, byteArrayPayload(BridgeProtocol.encodeFrame(frame)));
         }
+    }
+
+    private static byte[] byteArrayPayload(byte[] frame) {
+        ByteArrayOutputStream payload = new ByteArrayOutputStream(frame.length + 5);
+        int length = frame.length;
+        while ((length & ~0x7F) != 0) {
+            payload.write((length & 0x7F) | 0x80);
+            length >>>= 7;
+        }
+        payload.write(length);
+        payload.write(frame, 0, frame.length);
+        return payload.toByteArray();
     }
 
     private static String frameType(String channel) {

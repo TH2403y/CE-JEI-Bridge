@@ -58,6 +58,15 @@ tasks {
         options.encoding = "UTF-8"
         options.release.set(profile.javaVersion)
     }
+    compileTestJava {
+        options.encoding = "UTF-8"
+        options.release.set(profile.javaVersion)
+    }
+    register<JavaExec>("bridgeChannelsTest") {
+        dependsOn(testClasses)
+        classpath = sourceSets.test.get().runtimeClasspath
+        mainClass.set("com.ceclientbridge.net.BridgeChannelsTest")
+    }
     shadowJar {
         archiveClassifier.set("")
         archiveFileName.set("CraftEngineClientBridge-${project.version}-${target}.jar")
