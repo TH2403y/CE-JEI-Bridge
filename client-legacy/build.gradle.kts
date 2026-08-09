@@ -4,7 +4,7 @@ buildscript {
         maven("https://maven.fabricmc.net/")
     }
     dependencies {
-        classpath("net.fabricmc:fabric-loom:1.15.5")
+        classpath("net.fabricmc:fabric-loom:1.17.13")
     }
 }
 
@@ -14,12 +14,12 @@ plugins {
 
 apply(plugin = "fabric-loom")
 
-val minecraftVersion = "1.21.6"
-val loaderVersion = "0.17.2"
-val fabricApiVersion = "0.127.1+1.21.6"
-val yarnVersion = "1.21.6+build.1"
-val minecraftDependency = ">=1.21.6 <1.22"
-val targetFamily = "1.21.x"
+val minecraftVersion = "1.21.11"
+val loaderVersion = "0.19.3"
+val fabricApiVersion = "0.141.6+1.21.11"
+val yarnVersion = "1.21.11+build.1"
+val minecraftDependency = ">=1.21.11 <1.22"
+val targetFamily = "1.21.11"
 
 val modVersion: String by project
 val mavenGroup: String by project
@@ -50,7 +50,7 @@ dependencies {
     add("mappings", "net.fabricmc:yarn:$yarnVersion:v2")
     add("modImplementation", "net.fabricmc:fabric-loader:$loaderVersion")
     add("modImplementation", "net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
-    add("modCompileOnly", "maven.modrinth:jei:vPkfuKVX")
+    add("modCompileOnly", "maven.modrinth:jei:pw6C92V4")
     add("modCompileOnly", "maven.modrinth:jade:AMBKaYce")
 }
 
@@ -88,11 +88,11 @@ tasks {
         }
     }
     jar {
-        archiveBaseName.set("$modId-1.21.x")
+        archiveBaseName.set("$modId-1.21.11")
         archiveClassifier.set("")
     }
     named<org.gradle.jvm.tasks.Jar>("remapJar") {
-        archiveFileName.set("$modId-1.21.x-$modVersion.jar")
+        archiveFileName.set("$modId-1.21.11-$modVersion.jar")
     }
     register<JavaExec>("channelTest") {
         dependsOn(testClasses)

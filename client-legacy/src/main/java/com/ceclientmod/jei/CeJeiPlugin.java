@@ -10,7 +10,6 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.RecipeTypes;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.ingredients.subtypes.ISubtypeInterpreter;
-import mezz.jei.api.ingredients.subtypes.UidContext;
 import mezz.jei.api.recipe.IRecipeManager;
 import mezz.jei.api.recipe.vanilla.IJeiShapedRecipeBuilder;
 import mezz.jei.api.recipe.vanilla.IVanillaRecipeFactory;
@@ -28,6 +27,7 @@ import net.minecraft.recipe.CraftingRecipe;
 import net.minecraft.recipe.Ingredient;
 import net.minecraft.recipe.RecipeEntry;
 import net.minecraft.recipe.book.CraftingRecipeCategory;
+import net.minecraft.recipe.display.SlotDisplay;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.Registries;
@@ -87,17 +87,8 @@ public final class CeJeiPlugin implements IModPlugin {
         // after the first collision (including the vanilla materials CraftEngine items are built on)
         // with no interpreter at all. That's why ingredient slots never resolved to a CraftEngine
         // identity while the item list (populated a different way, via addIngredientsAtRuntime) worked.
-        ISubtypeInterpreter<ItemStack> interpreter = new ISubtypeInterpreter<>() {
-            @Override
-            public Object getSubtypeData(ItemStack stack, UidContext context) {
-                return CeItemRegistry.ceIdOf(stack).orElse(null);
-            }
-
-            @Override
-            public String getLegacyStringSubtypeInfo(ItemStack stack, UidContext context) {
-                return CeItemRegistry.ceIdOf(stack).orElse("");
-            }
-        };
+        ISubtypeInterpreter<ItemStack> interpreter = (stack, context) ->
+                CeItemRegistry.ceIdOf(stack).orElse(null);
         for (Item item : Registries.ITEM) {
             try {
                 registration.registerSubtypeInterpreter(item, interpreter);
@@ -234,8 +225,9 @@ public final class CeJeiPlugin implements IModPlugin {
             return null;
         }
 
+        SlotDisplay resultDisplay = new SlotDisplay.StackSlotDisplay(entry.result());
         IJeiShapedRecipeBuilder builder = vanillaRecipeFactory.createShapedRecipeBuilder(
-                CraftingRecipeCategory.MISC, List.of(entry.result()));
+                CraftingRecipeCategory.MISC, resultDisplay);
 
         Map<ItemStack, Character> assigned = new LinkedHashMap<>();
         char next = 'a';
@@ -252,7 +244,8 @@ public final class CeJeiPlugin implements IModPlugin {
                     ch = next++;
                     assigned.put(stack, ch);
                     Ingredient typeIngredient = Ingredient.ofItem(stack.getItem());
-                    builder.define(ch, typeIngredient);
+                    SlotDisplay slotDisplay = new SlotDisplay.StackSlotDisplay(stack);
+                    builder.define(ch, typeIngredient, slotDisplay);
                 }
                 line.append((char) ch);
             }

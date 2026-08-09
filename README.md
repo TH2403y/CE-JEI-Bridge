@@ -13,7 +13,7 @@ CraftEngine 通过 `item_model` 等数据组件在**服务端到客户端的封�
 
 - **`server/`**（`CraftEngineClientBridge`，Paper 插件）：读取 CraftEngine 的物品/方块/合成台/锻造台配方数据，还原出客户端实际会渲染的外观（`item_model`、自定义名称等），通过插件消息通道把这些"精确外观"数据发给客户端；同时手动重建并重发原版配方同步（因为这个 MC 版本不会自动发送）。
 - **`client/`**（`CraftEngineClientMod`，Fabric 模组）：接收上述数据，喂给 JEI 的物品列表和自定义 JEI 展示分类（合成台复用 JEI 自带展示能力加精确材质覆盖；锻造台由于 JEI 没有对应的精确展示接口，改为完全自定义的 `IRecipeCategory` 手动摆放四个格子），并给 Jade 提供方块/物品的 CraftEngine 身份识别。该目录构建 26.x 客户端，基线为 Minecraft 26.2。
-- **`client-legacy/`**：独立的 1.21.x Fabric 客户端，基线为 Minecraft 1.21.6；它使用独立的 Yarn/JEI/Jade API，不与 26.x 客户端共用版本相关实现。
+- **`client-legacy/`**：独立的 Minecraft 1.21.11 Fabric 客户端；它使用独立的 Yarn/JEI/Jade API，不与 26.x 客户端共用版本相关实现。
 
 两边通过一组插件消息通道（`ceclientbridge:items`/`blocks`/`brewing`/`crafting_display`/`smithing_display`/`hello`）通信，必须配套使用。
 
@@ -21,7 +21,7 @@ CraftEngine 通过 `item_model` 等数据组件在**服务端到客户端的封�
 
 - 服务端：Paper/ASPaper，Minecraft 26.2（26.x 服务端构建基线），已安装并加载 [CraftEngine](https://craftengine.net/)；构建依赖由本地或受控 CI 地址提供，不随本仓库发布。
 - 26.x 客户端：Fabric Loader 0.19.3、Minecraft 26.2、Fabric API 0.155.0+26.2、JEI 30.16.0.131、Jade 26.2.10，Java 25。
-- 1.21.x 客户端：以 Minecraft 1.21.6 为构建基线，声明兼容 `>=1.21.6 <1.22`，使用 Fabric Loader 0.17.2、Fabric API 0.127.1+1.21.6、JEI 19.39.0.368、Jade 19.0.3，Java 21。
+- 1.21.11 客户端：仅支持 Minecraft 1.21.11，使用 Fabric Loader 0.19.3、Fabric API 0.141.6+1.21.11、JEI 27.22.0.66、Jade 19.0.3，Java 21。
 - JEI 和/或 Jade 均为可选（装哪个就对哪个生效，都不装也能正常启动）。Gradle 本体使用 JDK 21，26.x 目标通过 Gradle toolchain 使用 Java 25。
 
 CraftEngine JAR 不包含在本仓库或公开 Release 中。GitHub Actions 需要配置
@@ -41,7 +41,7 @@ CraftEngine JAR 不包含在本仓库或公开 Release 中。GitHub Actions 需�
 
 GitHub Actions 会从受控的 `CRAFTENGINE_JAR_URL` 下载并校验构建依赖；本地构建仍需准备对应的 `server/libs/` JAR。
 
-推送到 `main` 且构建成功后，GitHub Actions 会自动更新 [`latest` 预发布版本](https://github.com/TH2403y/CE-JEI-Bridge/releases/tag/latest)，其中包含 Paper 插件、Fabric 26.x 模组、Fabric 1.21.x 模组和 `SHA256SUMS.txt`。推送 `v*` 标签则发布对应的正式版本 Release。
+推送到 `main` 且构建成功后，GitHub Actions 会自动更新 [`latest` 预发布版本](https://github.com/TH2403y/CE-JEI-Bridge/releases/tag/latest)，其中包含 Paper 插件、Fabric 26.x 模组、Fabric 1.21.11 模组和 `SHA256SUMS.txt`。推送 `v*` 标签则发布对应的正式版本 Release。
 
 ### client/（CraftEngineClientMod，26.x）
 
@@ -50,14 +50,14 @@ cd client
 ./gradlew clean build -Ptarget=26.x
 ```
 
-### client-legacy/（1.21.x）
+### client-legacy/（1.21.11）
 
 ```powershell
 cd client
 ./gradlew -p ../client-legacy clean build
 ```
 
-产物在 `client-legacy/build/libs/ceclientmod-1.21.x-*.jar`，丢进对应的 `.minecraft/mods/` 目录。
+产物在 `client-legacy/build/libs/ceclientmod-1.21.11-*.jar`，丢进对应的 `.minecraft/mods/` 目录。
 
 ### protocol/
 
@@ -72,7 +72,7 @@ cd client
 
 - 锻造台的盔甲纹饰配方（trim）不在精确展示范围内——它的产物是运行时按基础盔甲+染料动态合成的，没有单一固定结果可以展示。
 - JEI 的精确展示配方是连接时一次性注册的（`IRecipeManager` 没有对应的移除接口），服务端 CraftEngine 热重载后新增/修改的配方要玩家重新连接才会在 JEI 里刷新。
-- 26.x 服务端和客户端以 Minecraft 26.2 构建，1.21.x 客户端以 1.21.6 构建；声明的版本范围不是每个补丁版本都经过实机验证的承诺。
+- 26.x 服务端和客户端以 Minecraft 26.2 构建，另一个客户端仅构建并验证 Minecraft 1.21.11；不提供 1.21.6 或其他 1.21.x 补丁版本兼容承诺。
 - 协议里读的部分 NMS 字段在其他版本可能对不上。
 
 ## 许可证
