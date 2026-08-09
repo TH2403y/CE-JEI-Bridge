@@ -4,12 +4,13 @@ final class BridgeHandshakeTest {
 
     public static void main(String[] args) {
         acceptsMatchingTargetAndCapabilities();
+        acceptsSupportedCrossTargetClient();
         rejectsProtocolMismatch();
-        rejectsMinecraftTargetMismatch();
+        rejectsUnsupportedTargetMismatch();
         rejectsMissingRequiredCapability();
         helloCodecRoundTripPreservesTarget();
         compatibilityGateRequiresSuccessfulHandshake();
-        System.out.println("BridgeHandshakeTest: 6 tests passed");
+        System.out.println("BridgeHandshakeTest: 7 tests passed");
     }
 
     private static void acceptsMatchingTargetAndCapabilities() {
@@ -30,13 +31,22 @@ final class BridgeHandshakeTest {
         check(!result.accepted() && result.reason().contains("protocol"), "protocol mismatch should be explained");
     }
 
-    private static void rejectsMinecraftTargetMismatch() {
-        BridgeHello server = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "26.2", BridgeCapabilities.ALL);
-        BridgeHello client = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "1.21.11", BridgeCapabilities.ALL);
+    private static void acceptsSupportedCrossTargetClient() {
+        BridgeHello server = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "26.x", BridgeCapabilities.ALL);
+        BridgeHello client = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "1.21.x", BridgeCapabilities.ALL);
 
         BridgeNegotiation result = BridgeHandshake.negotiate(server, client);
 
-        check(!result.accepted() && result.reason().contains("Minecraft"), "target mismatch should be explained");
+        check(result.accepted(), "supported cross-target client should be accepted");
+    }
+
+    private static void rejectsUnsupportedTargetMismatch() {
+        BridgeHello server = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "26.x", BridgeCapabilities.ALL);
+        BridgeHello client = new BridgeHello(BridgeProtocol.CURRENT_VERSION, "forge", BridgeCapabilities.ALL);
+
+        BridgeNegotiation result = BridgeHandshake.negotiate(server, client);
+
+        check(!result.accepted() && result.reason().contains("Minecraft"), "unsupported target mismatch should be explained");
     }
 
     private static void rejectsMissingRequiredCapability() {

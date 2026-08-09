@@ -17,6 +17,9 @@ not a promise that every patch in its manifest range has been tested in-game.
   runtime classes.
 - The server jar is built only for the 26.2 Paperweight target. There is no
   server 1.21.x build profile.
+- The bridge protocol accepts either Fabric client target (`26.x` or `1.21.x`)
+  when paired with the 26.x server target, provided protocol version and
+  advertised capability bits match.
 
 ## Evidence boundary
 

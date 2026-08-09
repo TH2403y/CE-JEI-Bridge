@@ -11,7 +11,7 @@ public final class BridgeHandshake {
             return new BridgeNegotiation(false, "protocol version mismatch: server="
                     + server.protocolVersion() + ", client=" + client.protocolVersion());
         }
-        if (!server.minecraftTarget().equals(client.minecraftTarget())) {
+        if (!targetsCompatible(server.minecraftTarget(), client.minecraftTarget())) {
             return new BridgeNegotiation(false, "Minecraft target mismatch: server="
                     + server.minecraftTarget() + ", client=" + client.minecraftTarget());
         }
@@ -20,5 +20,21 @@ public final class BridgeHandshake {
             return new BridgeNegotiation(false, "missing bridge capability bits: " + missing);
         }
         return new BridgeNegotiation(true, "compatible");
+    }
+
+    private static boolean targetsCompatible(String serverTarget, String clientTarget) {
+        if (serverTarget.equals(clientTarget)) {
+            return true;
+        }
+        return (is26Family(serverTarget) && is121Family(clientTarget))
+                || (is121Family(serverTarget) && is26Family(clientTarget));
+    }
+
+    private static boolean is26Family(String target) {
+        return "26.x".equals(target);
+    }
+
+    private static boolean is121Family(String target) {
+        return "1.21.x".equals(target);
     }
 }
