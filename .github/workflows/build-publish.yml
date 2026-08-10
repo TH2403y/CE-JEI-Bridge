@@ -103,9 +103,9 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          cp server/build/libs/CraftEngineClientBridge-1.1.0-26.x.jar dist/
-          cp client/build/libs/ceclientmod-26.x-1.0.0.jar dist/
-          cp client-legacy/build/libs/ceclientmod-1.21.11-1.0.0.jar dist/
+          cp server/build/libs/CraftEngineClientBridge-1.0.2-26.x.jar dist/
+          cp client/build/libs/ceclientmod-26.x-1.0.2.jar dist/
+          cp client-legacy/build/libs/ceclientmod-1.21.11-1.0.2.jar dist/
           sha256sum dist/*.jar > dist/SHA256SUMS.txt
 
       - name: Upload build artifacts
@@ -138,9 +138,9 @@ jobs:
           set -euo pipefail
 
           required_assets=(
-            "CraftEngineClientBridge-1.1.0-26.x.jar"
-            "ceclientmod-26.x-1.0.0.jar"
-            "ceclientmod-1.21.11-1.0.0.jar"
+            "CraftEngineClientBridge-1.0.2-26.x.jar"
+            "ceclientmod-26.x-1.0.2.jar"
+            "ceclientmod-1.21.11-1.0.2.jar"
             "SHA256SUMS.txt"
           )
           for asset in "${required_assets[@]}"; do

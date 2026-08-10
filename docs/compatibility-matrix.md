@@ -5,9 +5,9 @@ not a promise that every patch in its manifest range has been tested in-game.
 
 | Component | Target | Baseline | Java | Important dependencies | Artifact |
 | --- | --- | --- | --- | --- | --- |
-| Paper bridge | 26.x | 26.2 | 25 | Paperweight dev bundle 26.2.build.65-beta; local CraftEngine API jar | server/build/libs/CraftEngineClientBridge-1.1.0-26.x.jar |
-| Fabric client | 26.x | 26.2 | 25 | Loader 0.19.3; Fabric API 0.155.0+26.2; JEI 30.16.0.131; Jade 26.2.10 | client/build/libs/ceclientmod-26.x-1.0.0.jar |
-| Fabric client | 1.21.11 | 1.21.11 | 21 | Loader 0.19.3; Fabric API 0.141.6+1.21.11; JEI 27.22.0.66; Jade 19.0.3 | client-legacy/build/libs/ceclientmod-1.21.11-1.0.0.jar |
+| Paper bridge | 26.x | 26.2 | 25 | Paperweight dev bundle 26.2.build.65-beta; local CraftEngine API jar | server/build/libs/CraftEngineClientBridge-1.0.2-26.x.jar |
+| Fabric client | 26.x | 26.2 | 25 | Loader 0.19.3; Fabric API 0.155.0+26.2; JEI 30.16.0.131; Jade 26.2.10 | client/build/libs/ceclientmod-26.x-1.0.2.jar |
+| Fabric client | 1.21.11 | 1.21.11 | 21 | Loader 0.19.3; Fabric API 0.141.6+1.21.11; JEI 27.22.0.66; Jade 19.0.3 | client-legacy/build/libs/ceclientmod-1.21.11-1.0.2.jar |
 
 ## Metadata contracts
 
