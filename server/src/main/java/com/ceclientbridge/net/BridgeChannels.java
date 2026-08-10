@@ -21,6 +21,9 @@ public final class BridgeChannels {
     public static final String BREWING = "ceclientbridge:brewing";
     public static final String CRAFTING_DISPLAY = "ceclientbridge:crafting_display";
     public static final String SMITHING_DISPLAY = "ceclientbridge:smithing_display";
+    public static final String BLOCK_ICONS = "ceclientbridge:block_icons";
+    public static final String FURNITURE_PROBE = "ceclientbridge:furniture_probe";
+    public static final String FURNITURE_ICON = "ceclientbridge:furniture_icon";
     public static final String HELLO = "ceclientbridge:hello";
 
     private static final int MAX_CHUNK_BYTES = 30000;

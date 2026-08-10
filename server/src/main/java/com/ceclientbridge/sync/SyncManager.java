@@ -12,6 +12,7 @@ import net.momirealms.craftengine.core.block.ImmutableBlockState;
 import net.momirealms.craftengine.core.item.Item;
 import net.momirealms.craftengine.core.item.ItemBuildContext;
 import net.momirealms.craftengine.core.item.ItemDefinition;
+import net.momirealms.craftengine.core.item.behavior.BlockItem;
 import net.momirealms.craftengine.core.item.recipe.CustomBrewingRecipe;
 import net.momirealms.craftengine.core.item.recipe.CustomCraftingTableRecipe;
 import net.momirealms.craftengine.core.item.recipe.CustomSmithingTransformRecipe;
@@ -20,6 +21,7 @@ import net.momirealms.craftengine.core.item.recipe.Recipe;
 import net.momirealms.craftengine.core.item.recipe.RecipeType;
 import net.momirealms.craftengine.core.util.Key;
 import net.momirealms.craftengine.core.util.UniqueKey;
+import com.ceclientbridge.protocol.JadeIconProtocol;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -52,6 +54,7 @@ public final class SyncManager {
     private final JavaPlugin plugin;
     private volatile byte[] itemsPayload = emptyCountPayload();
     private volatile byte[] blocksPayload = emptyCountPayload();
+    private volatile byte[] blockIconsPayload = JadeIconProtocol.encodeBlockIcons(List.of());
     private volatile byte[] brewingPayload = emptyCountPayload();
     private volatile byte[] craftingDisplayPayload = emptyCountPayload();
     private volatile Set<String> craftingDisplayRecipeIds = Set.of();
@@ -69,6 +72,10 @@ public final class SyncManager {
 
     public byte[] blocksPayload() {
         return blocksPayload;
+    }
+
+    public byte[] blockIconsPayload() {
+        return blockIconsPayload;
     }
 
     public byte[] brewingPayload() {
@@ -107,13 +114,15 @@ public final class SyncManager {
         Set<Key> craftingOutputItems = collectCraftingOutputItemIds();
         itemsPayload = buildItemsPayload(craftingOutputItems);
         blocksPayload = buildBlocksPayload();
+        blockIconsPayload = buildBlockIconsPayload();
         brewingPayload = buildBrewingPayload();
         craftingDisplayPayload = buildCraftingDisplayPayload();
         smithingDisplayPayload = buildSmithingDisplayPayload();
         generation = nextGeneration;
         plugin.getLogger().info("CraftEngine sync rebuilt (generation " + generation + "): " + itemsPayload.length + "B items ("
                 + craftingOutputItems.size() + " crafting outputs), "
-                + blocksPayload.length + "B blocks, " + brewingPayload.length + "B brewing, "
+                + blocksPayload.length + "B blocks, " + blockIconsPayload.length + "B Jade block icons, "
+                + brewingPayload.length + "B brewing, "
                 + craftingDisplayPayload.length + "B crafting display, "
                 + smithingDisplayPayload.length + "B smithing display");
     }
@@ -541,6 +550,50 @@ public final class SyncManager {
         return countPrefixed(entries);
     }
 
+    private byte[] buildBlockIconsPayload() {
+        Map<Key, ItemDefinition> loadedItems;
+        Map<Key, BlockDefinition> loadedBlocks;
+        try {
+            loadedItems = CraftEngineItems.loadedItems();
+            loadedBlocks = CraftEngineBlocks.loadedBlocks();
+        } catch (Throwable t) {
+            plugin.getLogger().log(Level.WARNING, "Failed to read CraftEngine block items for Jade icons", t);
+            return JadeIconProtocol.encodeBlockIcons(List.of());
+        }
+
+        Map<Key, ItemStack> iconsByBlock = new java.util.LinkedHashMap<>();
+        for (Map.Entry<Key, ItemDefinition> entry : loadedItems.entrySet()) {
+            try {
+                BlockItem blockItem = entry.getValue().behavior().getFirst(BlockItem.class);
+                if (blockItem == null || iconsByBlock.containsKey(blockItem.block())) continue;
+                BukkitItemDefinition definition = CraftEngineItems.byId(entry.getKey());
+                if (definition == null) continue;
+                ItemStack stack = definition.buildBukkitItem(ItemBuildContext.empty(), 1);
+                if (stack == null || stack.getType().isAir()) continue;
+                iconsByBlock.put(blockItem.block(), toClientBoundStack(stack));
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.WARNING, "Failed to build Jade icon from CraftEngine item '" + entry.getKey() + "'", t);
+            }
+        }
+
+        List<JadeIconProtocol.BlockIcon> icons = new ArrayList<>();
+        for (Map.Entry<Key, BlockDefinition> entry : loadedBlocks.entrySet()) {
+            ItemStack stack = iconsByBlock.get(entry.getKey());
+            if (stack == null) continue;
+            try {
+                byte[] appearance = encodeItemAppearance(stack);
+                for (ImmutableBlockState state : entry.getValue().variantProvider().states()) {
+                    if (state.visualBlockState() == null) continue;
+                    icons.add(new JadeIconProtocol.BlockIcon(
+                            state.visualBlockState().getAsString(), entry.getKey().asString(), appearance));
+                }
+            } catch (Throwable t) {
+                plugin.getLogger().log(Level.WARNING, "Failed to export Jade icon for CraftEngine block '" + entry.getKey() + "'", t);
+            }
+        }
+        return JadeIconProtocol.encodeBlockIcons(icons);
+    }
+
     private byte[] buildBrewingPayload() {
         List<Recipe> recipes;
         try {
@@ -583,6 +636,18 @@ public final class SyncManager {
      */
     public static ItemStack toClientBoundStack(ItemStack stack) {
         return BukkitItemManager.instance().s2c(stack, null).orElse(stack);
+    }
+
+    public static byte[] encodeItemAppearance(ItemStack stack) {
+        try {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            DataOutputStream out = new DataOutputStream(bytes);
+            writeItemAppearance(out, stack);
+            out.flush();
+            return bytes.toByteArray();
+        } catch (IOException impossible) {
+            throw new AssertionError(impossible);
+        }
     }
 
     /** [baseItem:UTF][hasCraftEngineId:bool][craftEngineId:UTF?][hasCMD:bool][cmd:int?][hasItemModel:bool][itemModel:UTF?][hasName:bool][name:JSON?] */

@@ -16,6 +16,10 @@ public final class BridgeChannels {
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("ceclientbridge", "crafting_display"));
     public static final CustomPacketPayload.Type<ChunkPayload> SMITHING_DISPLAY =
             new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("ceclientbridge", "smithing_display"));
+    public static final CustomPacketPayload.Type<ChunkPayload> BLOCK_ICONS =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("ceclientbridge", "block_icons"));
+    public static final CustomPacketPayload.Type<ChunkPayload> FURNITURE_ICON =
+            new CustomPacketPayload.Type<>(Identifier.fromNamespaceAndPath("ceclientbridge", "furniture_icon"));
 
     private BridgeChannels() {
     }
