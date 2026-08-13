@@ -101,7 +101,7 @@ jobs:
       - name: Build Paper 1.21.11 plugin with shadowJar
         working-directory: server
         shell: bash
-        run: bash ./gradlew --no-daemon clean shadowJar -Ptarget=1.21.11
+        run: bash ./gradlew --no-daemon shadowJar -Ptarget=1.21.11
 
       - name: Stage release files and checksums
         shell: bash
