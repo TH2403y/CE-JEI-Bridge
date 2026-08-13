@@ -30,7 +30,7 @@ CraftEngine 通过 `item_model` 等数据组件在**服务端到客户端的封�
 
 ## 依赖要求(这里直接放构建时用的东西了)
 
-- 服务端：Paper/ASPaper，Minecraft 26.2，已安装并加载 [CraftEngine](https://craftengine.net/)。
+- 服务端：Paper/ASPaper，Minecraft 26.2 或 1.21.11，已安装并加载与服务器版本匹配的 [CraftEngine](https://craftengine.net/)。
 - 26.x 客户端：Fabric Loader 0.19.3，Fabric API 0.155.0+26.2、JEI 30.16.0.131、Jade 26.2.10，Java 25。
 - 1.21.11 客户端：仅支持 Minecraft 1.21.11，使用 Fabric Loader 0.19.3、Fabric API 0.141.6+1.21.11、JEI 27.22.0.66、Jade 19.0.3，Java 21。
 - JEI 和/或 Jade 均为可选（装哪个就对哪个生效，都不装也能正常启动）。Gradle 本体使用 JDK 21，26.x 目标通过 Gradle toolchain 使用 Java 25。
@@ -39,12 +39,13 @@ CraftEngine 通过 `item_model` 等数据组件在**服务端到客户端的封�
 
 ## 构建
 
-### server/（CraftEngineClientBridge，26.x）
+### server/（CraftEngineClientBridge）
 
 1. 仓库自带的 `server/libs/craft-engine-paper-plugin-26.7.4.jar` 可直接用于开发构建。需要改用其他版本时，通过 `-PcraftEngineJar=<jar 路径>` 指定与目标服务器匹配的 CraftEngine JAR。
 2. ```
    cd server
-   ./gradlew clean shadowJar -Ptarget=26.x
+   ./gradlew clean shadowJar -Ptarget=26.x      # 26.2 服务端
+   ./gradlew clean shadowJar -Ptarget=1.21.11   # 1.21.11 服务端（配合 client-legacy）
    ```
    产物在 `server/build/libs/CraftEngineClientBridge-*.jar`，丢进服务器 `plugins/` 目录。
 
@@ -79,7 +80,7 @@ cd client
 
 - 锻造台的盔甲纹饰配方（trim）不在精确展示范围内——它的产物是运行时按基础盔甲+染料动态合成的，没有单一固定结果可以展示。
 - JEI 的精确展示配方是连接时一次性注册的（`IRecipeManager` 没有对应的移除接口），服务端 CraftEngine 热重载后新增/修改的配方要玩家重新连接才会在 JEI 里刷新。
-- 26.x 服务端和客户端以 Minecraft 26.2 构建，另一个客户端仅构建并验证 Minecraft 1.21.11；不提供 1.21.6 或其他 1.21.x 补丁版本兼容承诺。
+- 服务端提供 26.2 与 1.21.11 两个构建目标，客户端提供 26.2 与 1.21.11 两个目标；不提供 1.21.6 或其他 1.21.x 补丁版本兼容承诺。
 - 协议里读的部分 NMS 字段在其他版本可能对不上。
 
 ## 许可证

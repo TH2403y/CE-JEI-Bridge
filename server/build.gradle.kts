@@ -21,9 +21,10 @@ val craftEngineJar = providers.gradleProperty("craftEngineJar")
     .orElse("libs/craft-engine-paper-plugin-26.7.4.jar")
     .get()
 val profiles = mapOf(
-    // The Paper bridge is released as one 26.2 server artifact. Legacy coverage is
-    // provided by the separate Fabric client artifact, not by another server build.
-    "26.x" to ServerProfile("26.2.build.65-beta", 25, "26.x")
+    // 26.2 is the current server baseline; 1.21.11 pairs with client-legacy/ so a
+    // 1.21.11 server can serve the legacy Fabric client. Java 21 keeps 1.21.11 loadable.
+    "26.x" to ServerProfile("26.2.build.65-beta", 25, "26.x"),
+    "1.21.11" to ServerProfile("1.21.11-R0.1-SNAPSHOT", 21, "1.21.11")
 )
 val profile = profiles[target] ?: throw GradleException(
     "Unsupported or unavailable server target '$target'. Available profiles: ${profiles.keys.joinToString()}")
@@ -50,6 +51,7 @@ dependencies {
 sourceSets {
     main {
         java.srcDir("../protocol/src/main/java")
+        java.srcDir(if (profile.targetFamily == "1.21.11") "src/1.21.11/java" else "src/26.x/java")
     }
 }
 

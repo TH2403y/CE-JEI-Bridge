@@ -98,12 +98,18 @@ jobs:
         shell: bash
         run: bash ./gradlew --no-daemon clean shadowJar -Ptarget=26.x
 
+      - name: Build Paper 1.21.11 plugin with shadowJar
+        working-directory: server
+        shell: bash
+        run: bash ./gradlew --no-daemon clean shadowJar -Ptarget=1.21.11
+
       - name: Stage release files and checksums
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p dist
           cp server/build/libs/CraftEngineClientBridge-1.0.2-26.x.jar dist/
+          cp server/build/libs/CraftEngineClientBridge-1.0.2-1.21.11.jar dist/
           cp client/build/libs/ceclientmod-26.x-1.0.2.jar dist/
           cp client-legacy/build/libs/ceclientmod-1.21.11-1.0.2.jar dist/
           sha256sum dist/*.jar > dist/SHA256SUMS.txt
@@ -139,6 +145,7 @@ jobs:
 
           required_assets=(
             "CraftEngineClientBridge-1.0.2-26.x.jar"
+            "CraftEngineClientBridge-1.0.2-1.21.11.jar"
             "ceclientmod-26.x-1.0.2.jar"
             "ceclientmod-1.21.11-1.0.2.jar"
             "SHA256SUMS.txt"
